@@ -39,3 +39,162 @@ public class Geometry {
         r2.draw();
     }
 }
+
+
+//PET CLINIC
+public class Pet {
+    private String specie;
+    private String name;
+
+    public Pet(String specie, String name) {
+        this.specie = specie;
+        this.name = name;
+    }
+
+    public String getSpecie() { return specie; }
+    public String getName() { return name; }
+}
+import java.util.Scanner;
+
+public class PetClinic {
+    public static void main(String[] args) {
+        Pet[] pets = new Pet[10];
+        pets[0] = new Pet("dog", "Pluto");
+        pets[1] = new Pet("cat", "Garfield");
+        pets[2] = new Pet("fish", "Erma");
+        pets[3] = new Pet("hamster", "Lufy");
+        pets[4] = new Pet("dog", "milka");
+        pets[5] = new Pet("cat", "Ruby");
+        pets[6] = new Pet("hamster", "Elsa");
+        pets[7] = new Pet("turtle", "Bruno");
+        pets[8] = new Pet("cat", "Olly");
+        pets[9] = new Pet("dog", "Donald");
+
+        Scanner sc = new Scanner(System.in);
+        System.out.print("Give type: ");
+        String type = sc.nextLine().toLowerCase();
+
+        int count = 0;
+        for (Pet pet : pets) {
+            if (pet.getSpecie().equalsIgnoreCase(type)) {
+                System.out.println("- " + pet.getName());
+                count++;
+            }
+        }
+
+        System.out.println("Total animals of " + type + " type: " + count);
+        sc.close();
+    }
+}
+
+//CAR RENTAL
+public class Car {
+    private String plate;
+    private String model;
+    private int km;
+    private boolean rented;
+
+    public Car(String plate, String model, int km) {
+        this.plate = plate;
+        this.model = model;
+        this.km = km;
+        this.rented = false;
+    }
+
+    public String getPlate() { return plate; }
+    public String getModel() { return model; }
+    public int getKm() { return km; }
+    public boolean isRented() { return rented; }
+
+    public void rent() {
+        if (!rented) {
+            rented = true;
+            System.out.println("Car " + plate + " rented.");
+        } else {
+            System.out.println("Car " + plate + " is already rented.");
+        }
+    }
+
+    public void returnCar(int newKm) {
+        if (rented) {
+            rented = false;
+            km = newKm;
+            System.out.println("Car " + plate + " returned. New km: " + km);
+        } else {
+            System.out.println("Car " + plate + " was not rented.");
+        }
+    }
+
+    public void display() {
+        System.out.printf("Plate: %s | Model: %s | Km: %d | Rented: %s%n", plate, model, km, rented ? "Yes" : "No");
+    }
+}
+import java.util.Scanner;
+
+public class CarRental {
+    public static void main(String[] args) {
+        Car[] cars = new Car[5];
+        cars[0] = new Car("ABC123", "Toyota Corolla", 10000);
+        cars[1] = new Car("XYZ789", "Honda Civic", 12000);
+        cars[2] = new Car("DEF456", "Ford Focus", 15000);
+        cars[3] = new Car("GHI321", "Chevy Malibu", 18000);
+        cars[4] = new Car("JKL654", "Nissan Sentra", 20000);
+
+        Scanner sc = new Scanner(System.in);
+        int choice;
+
+        do {
+            System.out.println("\n1. Rent a car\n2. Return a car\n3. Display all cars\n0. Exit");
+            System.out.print("Choose an option: ");
+            choice = Integer.parseInt(sc.nextLine());
+
+            switch (choice) {
+                case 1:
+                    System.out.print("Enter plate number to rent: ");
+                    String plateToRent = sc.nextLine();
+                    boolean foundRent = false;
+                    for (Car car : cars) {
+                        if (car.getPlate().equalsIgnoreCase(plateToRent)) {
+                            car.rent();
+                            foundRent = true;
+                            break;
+                        }
+                    }
+                    if (!foundRent) System.out.println("Car not found.");
+                    break;
+
+                case 2:
+                    System.out.print("Enter plate number to return: ");
+                    String plateToReturn = sc.nextLine();
+                    System.out.print("Enter new km reading: ");
+                    int newKm = Integer.parseInt(sc.nextLine());
+                    boolean foundReturn = false;
+                    for (Car car : cars) {
+                        if (car.getPlate().equalsIgnoreCase(plateToReturn)) {
+                            car.returnCar(newKm);
+                            foundReturn = true;
+                            break;
+                        }
+                    }
+                    if (!foundReturn) System.out.println("Car not found.");
+                    break;
+
+                case 3:
+                    for (Car car : cars) {
+                        car.display();
+                    }
+                    break;
+
+                case 0:
+                    System.out.println("Goodbye!");
+                    break;
+
+                default:
+                    System.out.println("Invalid option.");
+            }
+
+        } while (choice != 0);
+
+        sc.close();
+    }
+}
