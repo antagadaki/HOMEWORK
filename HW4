@@ -1,0 +1,193 @@
+import java.io.*;
+import java.sql.*;
+import java.time.LocalDate;
+import java.util.*;
+
+
+class Order {
+    private String customerName;
+    private double amountPaid;
+    private LocalDate date;
+
+    public Order(String customerName, double amountPaid, LocalDate date) {
+        this.customerName = customerName;
+        this.amountPaid = amountPaid;
+        this.date = date;
+    }
+
+    public String getCustomerName() { return customerName; }
+    public double getAmountPaid() { return amountPaid; }
+    public LocalDate getDate() { return date; }
+}
+
+// Interface for data operations
+interface OrderRepository {
+    void addOrder(Order order);
+    List<Order> getOrdersByDate(LocalDate date);
+    double getTotalAmountByCustomer(String customerName);
+}
+
+// CSV implementation
+class CSVOrderRepository implements OrderRepository {
+    private final String filename;
+
+    public CSVOrderRepository(String filename) {
+        this.filename = filename;
+    }
+
+    public void addOrder(Order order) {
+        try (PrintWriter pw = new PrintWriter(new FileWriter(filename, true))) {
+            pw.printf("%s,%.2f,%s\n", order.getCustomerName(), order.getAmountPaid(), order.getDate());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public List<Order> getOrdersByDate(LocalDate date) {
+        List<Order> results = new ArrayList<>();
+        try (Scanner sc = new Scanner(new File(filename))) {
+            while (sc.hasNextLine()) {
+                String[] parts = sc.nextLine().split(",");
+                if (parts.length != 3) continue;
+                if (LocalDate.parse(parts[2]).equals(date)) {
+                    results.add(new Order(parts[0], Double.parseDouble(parts[1]), date));
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return results;
+    }
+
+    public double getTotalAmountByCustomer(String customerName) {
+        double total = 0;
+        try (Scanner sc = new Scanner(new File(filename))) {
+            while (sc.hasNextLine()) {
+                String[] parts = sc.nextLine().split(",");
+                if (parts.length != 3) continue;
+                if (parts[0].equalsIgnoreCase(customerName)) {
+                    total += Double.parseDouble(parts[1]);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return total;
+    }
+}
+
+// MySQL implementation
+class MySQLOrderRepository implements OrderRepository {
+    private final String url = "jdbc:mysql://localhost:3306/coffee_shop";
+    private final String user = "root";
+    private final String password = "yourpassword";
+
+    public MySQLOrderRepository() {
+        try (Connection conn = DriverManager.getConnection(url, user, password);
+             Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS orders (" +
+                    "id INT AUTO_INCREMENT PRIMARY KEY, " +
+                    "customer_name VARCHAR(255), " +
+                    "amount_paid DOUBLE, " +
+                    "order_date DATE)");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void addOrder(Order order) {
+        try (Connection conn = DriverManager.getConnection(url, user, password);
+             PreparedStatement ps = conn.prepareStatement("INSERT INTO orders (customer_name, amount_paid, order_date) VALUES (?, ?, ?)");) {
+            ps.setString(1, order.getCustomerName());
+            ps.setDouble(2, order.getAmountPaid());
+            ps.setDate(3, Date.valueOf(order.getDate()));
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public List<Order> getOrdersByDate(LocalDate date) {
+        List<Order> list = new ArrayList<>();
+        try (Connection conn = DriverManager.getConnection(url, user, password);
+             PreparedStatement ps = conn.prepareStatement("SELECT customer_name, amount_paid FROM orders WHERE order_date = ?")) {
+            ps.setDate(1, Date.valueOf(date));
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                list.add(new Order(rs.getString("customer_name"), rs.getDouble("amount_paid"), date));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public double getTotalAmountByCustomer(String customerName) {
+        double total = 0;
+        try (Connection conn = DriverManager.getConnection(url, user, password);
+             PreparedStatement ps = conn.prepareStatement("SELECT SUM(amount_paid) FROM orders WHERE customer_name = ?")) {
+            ps.setString(1, customerName);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                total = rs.getDouble(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return total;
+    }
+}
+
+// Main app class
+public class CoffeeShopApp {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+
+        System.out.println("Choose storage type: 1 - CSV, 2 - MySQL");
+        int choice = Integer.parseInt(sc.nextLine());
+
+        OrderRepository repository;
+        if (choice == 1) {
+            repository = new CSVOrderRepository("orders.csv");
+        } else {
+            repository = new MySQLOrderRepository();
+        }
+
+        int option;
+        do {
+            System.out.println("\n1. Add Order\n2. View orders of a date\n3. View total amount of a customer\n0. Exit");
+            option = Integer.parseInt(sc.nextLine());
+
+            switch (option) {
+                case 1:
+                    System.out.print("Customer name: ");
+                    String name = sc.nextLine();
+                    System.out.print("Amount paid: ");
+                    double amount = Double.parseDouble(sc.nextLine());
+                    System.out.print("Date (yyyy-mm-dd): ");
+                    LocalDate date = LocalDate.parse(sc.nextLine());
+                    repository.addOrder(new Order(name, amount, date));
+                    break;
+
+                case 2:
+                    System.out.print("Enter date (yyyy-mm-dd): ");
+                    LocalDate queryDate = LocalDate.parse(sc.nextLine());
+                    List<Order> orders = repository.getOrdersByDate(queryDate);
+                    for (Order o : orders) {
+                        System.out.printf("Customer: %s | Amount: %.2f\n", o.getCustomerName(), o.getAmountPaid());
+                    }
+                    break;
+
+                case 3:
+                    System.out.print("Enter customer name: ");
+                    String custName = sc.nextLine();
+                    double total = repository.getTotalAmountByCustomer(custName);
+                    System.out.printf("Total paid by %s: %.2f\n", custName, total);
+                    break;
+            }
+
+        } while (option != 0);
+
+        sc.close();
+    }
+}
