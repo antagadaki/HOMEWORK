@@ -20,14 +20,14 @@ class Order {
     public LocalDate getDate() { return date; }
 }
 
-// Interface for data operations
+
 interface OrderRepository {
     void addOrder(Order order);
     List<Order> getOrdersByDate(LocalDate date);
     double getTotalAmountByCustomer(String customerName);
 }
 
-// CSV implementation
+
 class CSVOrderRepository implements OrderRepository {
     private final String filename;
 
@@ -76,7 +76,7 @@ class CSVOrderRepository implements OrderRepository {
     }
 }
 
-// MySQL implementation
+
 class MySQLOrderRepository implements OrderRepository {
     private final String url = "jdbc:mysql://localhost:3306/coffee_shop";
     private final String user = "root";
@@ -138,7 +138,6 @@ class MySQLOrderRepository implements OrderRepository {
     }
 }
 
-// Main app class
 public class CoffeeShopApp {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
